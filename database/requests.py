@@ -1,6 +1,9 @@
 from database.models import Service, Master, User
 from database.models import async_sessionmaker
 from sqlalchemy import select
+from datetime import datetime
+
+from database.models import Appointment
 
 
 async def add_service(name: str, price: float, duration: int):
@@ -23,6 +26,12 @@ async def add_master(name: str, info: str):
         await session.commit()
 
 
+async def get_masters():
+    async with async_sessionmaker() as session:
+        result = await session.execute(select(Master))
+        return result.scalars().all()
+
+
 async def set_user(tg_id: int, name: str):
     async with async_sessionmaker() as session:
         user = await session.scalars(select(User).where(User.tg_id == tg_id))
@@ -30,3 +39,20 @@ async def set_user(tg_id: int, name: str):
         if not user:
             session.add(User(tg_id=tg_id, name=name))
             await session.commit()
+
+
+async def create_appointment(user_id, service_id, master_id, datetime_str):
+    async with async_sessionmaker() as session:
+        user = await session.scalar(select(User).where(User.tg_id == user_id))
+
+        dt = datetime.strptime(datetime_str, "%d.%m %H:%M")
+
+        appointment = Appointment(
+            user_id=user.id,
+            service_id=service_id,
+            master_id=master_id,
+            datetime=dt,
+        )
+
+        session.add(appointment)
+        await session.commit()

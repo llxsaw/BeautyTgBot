@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from sqlalchemy import BigInteger, String, ForeignKey, DateTime, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, relationship, mapped_column
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
+from datetime import datetime
 
 load_dotenv()
 
@@ -51,7 +52,7 @@ class Appointment(Base):
     service_id: Mapped[int] = mapped_column(ForeignKey("services.id"))
     master_id: Mapped[int] = mapped_column(ForeignKey("masters.id"))
 
-    datetime: Mapped[str] = mapped_column(DateTime)
+    datetime: Mapped[datetime] = mapped_column(DateTime)
 
     user: Mapped["User"] = relationship("User", back_populates="appointments")
     service: Mapped["Service"] = relationship()
