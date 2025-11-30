@@ -42,23 +42,6 @@ async def set_user(tg_id: int, name: str):
             await session.commit()
 
 
-async def create_appointment(user_id, service_id, master_id, datetime_str):
-    async with async_sessionmaker() as session:
-        user = await session.scalar(select(User).where(User.tg_id == user_id))
-
-        dt = datetime.strptime(datetime_str, "%d.%m %H:%M")
-
-        appointment = Appointment(
-            user_id=user.id,
-            service_id=service_id,
-            master_id=master_id,
-            datetime=dt,
-        )
-
-        session.add(appointment)
-        await session.commit()
-
-
 async def get_user_appointments(tg_id: int):
     async with async_sessionmaker() as session:
         user = await session.scalar(select(User).where(User.tg_id == tg_id))
@@ -72,6 +55,33 @@ async def get_user_appointments(tg_id: int):
             .options(joinedload(Appointment.service), joinedload(Appointment.master))
             .order_by(Appointment.datetime)
         )
-
         return result.scalars().all()
+
+
+# database/requests.py
+
+async def create_appointment(tg_id: int, service_id: int, master_id: int, datetime_str: str):
+    async with async_sessionmaker() as session:
+        # Ищем пользователя
+        user = await session.scalar(select(User).where(User.tg_id == tg_id))
+
+        if not user:
+            user = User(tg_id=tg_id, name="Неизвестный")
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+
+        dt = datetime.strptime(datetime_str, "%d.%m %H:%M")
+        current_year = datetime.now().year
+        dt = dt.replace(year=current_year)
+
+        appointment = Appointment(
+            user_id=user.id,
+            service_id=service_id,
+            master_id=master_id,
+            datetime=dt
+        )
+        session.add(appointment)
+        await session.commit()
+
 
