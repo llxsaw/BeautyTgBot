@@ -2,6 +2,7 @@ from database.models import Service, Master, User
 from database.models import async_sessionmaker
 from sqlalchemy import select
 from datetime import datetime
+from sqlalchemy.orm import joinedload
 
 from database.models import Appointment
 
@@ -56,3 +57,21 @@ async def create_appointment(user_id, service_id, master_id, datetime_str):
 
         session.add(appointment)
         await session.commit()
+
+
+async def get_user_appointments(tg_id: int):
+    async with async_sessionmaker() as session:
+        user = await session.scalar(select(User).where(User.tg_id == tg_id))
+
+        if not user:
+            return []
+
+        result = await session.execute(
+            select(Appointment)
+            .where(Appointment.user_id == user.id)
+            .options(joinedload(Appointment.service), joinedload(Appointment.master))
+            .order_by(Appointment.datetime)
+        )
+
+        return result.scalars().all()
+
